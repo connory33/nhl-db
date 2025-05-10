@@ -7,7 +7,7 @@
     <meta name="author" content="">
     <link rel="icon" href="../../../../favicon.ico">
 
-    <title>Connor Young</title>
+    <title>NHL Players</title>
 
     <link href="/resources/css/default_v3.css" rel="stylesheet" type="text/css" />
 
@@ -25,19 +25,27 @@
         ini_set('display_errors', 1); error_reporting(E_ALL);
 
 
-        if (!empty($_GET['search_column']) && !empty($_GET['search_term'])) {
-            // $searchTerm = $_POST['search_term'];
-            $searchColumn = mysqli_real_escape_string($conn, $_GET['search_column']);
-            $searchTerm = mysqli_real_escape_string($conn, $_GET['search_term']);
-            $originalSearchTerm = $searchTerm;
+            if (!empty($_GET['search_column']) && !empty($_GET['search_term'])) {
+                // $searchTerm = $_POST['search_term'];
+                $searchColumn = mysqli_real_escape_string($conn, $_GET['search_column']);
+                $searchTerm = mysqli_real_escape_string($conn, $_GET['search_term']);
+                $originalSearchTerm = $searchTerm;
 
-            $sql = "SELECT nhl_players.*, nhl_teams.triCode as currentTeamAbbrev
+                $sql = "SELECT nhl_players.*, nhl_teams.triCode as currentTeamAbbrev
                 FROM
                     nhl_players
                 LEFT JOIN nhl_teams on nhl_players.currentTeamID = nhl_teams.id
                 WHERE 
                     firstName LIKE '%$searchTerm%' 
                     OR lastName LIKE '%$searchTerm%'";
+            } else {
+                $sql = "SELECT nhl_players.*, nhl_teams.triCode as currentTeamAbbrev
+                FROM
+                    nhl_players
+                LEFT JOIN nhl_teams on nhl_players.currentTeamID = nhl_teams.id";
+            }
+
+            
 
             // Pagination setup
             $limit = 25; // Results per page
@@ -70,8 +78,6 @@
 
       <div id="nhl-games-players-summary-content-container" style='background-color: #343a40'>
             <br>
-            <p class="text-lg text-center">Search again:</p>
-
             <div class="flex justify-center">
               <form id="nhl-search" method="GET" action="nhl_games.php" class="backdrop-blur-sm px-4 sm:px-6 py-4 rounded-lg flex flex-col sm:flex-row gap-4
                 items-stretch sm:items-center w-full max-w-4xl">
@@ -97,8 +103,7 @@
 
             <h4 class='text-4xl text-center text-white'>Player Results</h4>
             <br>
-            <?php echo "<h5 class='text-center>" . $total_rows . " results found where " . $searchColumn . " = '" . $originalSearchTerm . "'</h5>"; ?>
-            <p>Click any player ID or name to view additional details.</p>
+                        <p>Click any player ID or name to view additional details.</p>
             <br>
             <!-- Display results in a table format -->
             <div class="table-container default-zebra-table max-w-[80%] mx-auto">
@@ -112,6 +117,7 @@
                             <th>Birthdate</th>
                             <th>Country</th>
                             <th>Shoots / Catches </th>
+                            <th>Active</th>
                             <th>Number</th>
                             <th>Team</th>
                         </tr>
@@ -128,7 +134,8 @@
                                 echo "<td>" . date('m/d/Y', strtotime($row['birthDate'])) . "</td>";
                                 echo "<td>" . $row['birthCountry'] . "</td>";
                                 echo "<td>" . $row['shootsCatches'] . "</td>";
-                                
+                                echo "<td>" . $row['isActive'] . "</td>";
+
                                 if ($row['sweaterNumber'] == '') {
                                     echo "<td>-</td>";
                                 } else {
@@ -157,44 +164,89 @@
 
                 <?php
 
-                if ($page==1) {
-                    $next_page = $page + 1;
-                    $advance_page = http_build_query(array_merge($_GET, ['page' => $next_page]));
-                    echo "<div><a class='btn btn-secondary' href='?" . $advance_page . "'>Next</a>
-                        </div>";
-                } else if ($page>1 and $page<$total_pages) {
-                    $prev_page = $page - 1;
-                    $next_page = $page + 1;
-                    $prev_page = http_build_query(array_merge($_GET, ['page' => $prev_page]));
-                    $advance_page = http_build_query(array_merge($_GET, ['page' => $next_page]));
-                    echo "<div class='text-center mt-6'>
-                        <a class='btn btn-secondary' href='?" . $prev_page . "' class='mr-4'>Previous</a>";
-                    echo "<a class='btn btn-secondary' href='?" . $advance_page . "'>Next</a>
-                        </div>";
-                } else {
-                    $prev_page = $page - 1;
-                    echo "<div class='text-center mt-6'>
-                        <a class='btn btn-secondary' href='?" . $prev_page . "'>Previous</a></div>";
-                }      
+                
 
             $conn->close();
-        }
+        
         ?>
+
+<!-- Replace your empty pagination div with this PHP-based pagination -->
+<div id="pagination" class="flex justify-center items-center mt-4 gap-2">
+    <?php if ($total_pages > 1): ?>
+        <!-- Previous page button -->
+        <?php if ($page > 1): ?>
+            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" 
+               class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-all">
+                &lt;
+            </a>
+        <?php else: ?>
+            <span class="px-4 py-2 bg-gray-400 text-white rounded opacity-50 cursor-not-allowed">&lt;</span>
+        <?php endif; ?>
+
+        <!-- First page -->
+        <a href="?<?= http_build_query(array_merge($_GET, ['page' => 1])) ?>" 
+           class="px-4 py-2 <?= $page == 1 ? 'bg-blue-600' : 'bg-gray-600' ?> text-white rounded hover:bg-gray-500 transition-all">
+            1
+        </a>
+
+        <!-- Ellipsis if needed -->
+        <?php if ($page > 3): ?>
+            <span class="px-4 py-2">...</span>
+        <?php endif; ?>
+
+        <!-- Page numbers around current page -->
+        <?php 
+        $start = max(2, $page - 1);
+        $end = min($total_pages - 1, $page + 1);
+        
+        if ($page <= 3) {
+            $start = 2;
+            $end = min(4, $total_pages - 1);
+        } elseif ($page >= $total_pages - 2) {
+            $start = max($total_pages - 3, 2);
+            $end = $total_pages - 1;
+        }
+        
+        for ($i = $start; $i <= $end; $i++): 
+        ?>
+            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" 
+               class="px-4 py-2 <?= $page == $i ? 'bg-blue-600' : 'bg-gray-600' ?> text-white rounded hover:bg-gray-500 transition-all">
+                <?= $i ?>
+            </a>
+        <?php endfor; ?>
+
+        <!-- Ellipsis if needed -->
+        <?php if ($end < $total_pages - 1): ?>
+            <span class="px-4 py-2">...</span>
+        <?php endif; ?>
+
+        <!-- Last page (if more than 1 page) -->
+        <?php if ($total_pages > 1): ?>
+            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $total_pages])) ?>" 
+               class="px-4 py-2 <?= $page == $total_pages ? 'bg-blue-600' : 'bg-gray-600' ?> text-white rounded hover:bg-gray-500 transition-all">
+                <?= $total_pages ?>
+            </a>
+        <?php endif; ?>
+
+        <!-- Next page button -->
+        <?php if ($page < $total_pages): ?>
+            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" 
+               class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-all">
+                &gt;
+            </a>
+        <?php else: ?>
+            <span class="px-4 py-2 bg-gray-400 text-white rounded opacity-50 cursor-not-allowed">&gt;</span>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
+        
       <br>
       <br>
       </div>
 
+
       <?php include 'footer.php'; ?>
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-    <script>window.jQuery || document.write('<script src="js/vendor/jquery-slim.min.js"><\/script>')</script>
-    <script src="../js/vendor/popper.min.js"></script>
-    <script src="../js/bootstrap.min.js"></script>
-    <script src="../js/vendor/holder.min.js"></script>
-    <!-- Placed at the end of the document so the pages load faster -->
 
           <!-- JS for search form, allowing player to access nhl_players.php and others to nhl_games.php -->
           <script>
