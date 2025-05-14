@@ -7,6 +7,7 @@
     <title>Connor Young</title>
     <link href="../resources/css/default_v3.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <?php include 'header.php'; ?>
 <body>
@@ -99,11 +100,7 @@ if (isset($_GET['game_id'])) {
         
         echo "<div class='text-white text-center' style='background-color: #343a40'>"; // whole page background color
         ?>
-        <div class="relative">
-            <div class="absolute top-0 left-0" style='margin-left: 20px; margin-top: 20px;'>
-                <a href="https://connoryoung.com/game_details.php?game_id=<?php echo htmlspecialchars($game_id); ?>" class="hover:underline" style='color:rgb(57, 121, 199)'>Back to Game Details</a>
-            </div>
-        </div>
+
         <?php
         echo "<br><br>";
         echo "<div class='max-w-[80%] mx-auto bg-slate-800 text-white py-6 px-4 rounded-lg shadow-lg mb-8 border-2 border-slate-600'>";
